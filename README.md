@@ -29,163 +29,119 @@
 
 </div>
 
+
 ## ❤️ About the Project
 
 > [!IMPORTANT]
-> ESP32 Light Tracker was designed to make solar/light tracking projects practical and accessible with embedded hardware. If this project helps you, leave a star in the repository. ⭐
+> ESP32 Light Tracker is a dual-axis light tracker: an ESP32 reads four light sensors (LDRs) and moves two servos so a small panel or sensor follows the brightest direction.
 
-The ESP32 Light Tracker controls two servo motors based on readings from four LDR sensors. It supports three operating modes: automatic light tracking, manual control via Bluetooth, and panic mode (safe predefined servo position). The project also includes automatic LDR calibration and a diagnostic mode for real-time telemetry.
+The firmware is written in C++ with the Arduino framework and built with PlatformIO. A push button cycles between automatic tracking, manual control over Bluetooth and a fixed safe position. The whole circuit can be simulated in [Wokwi](https://wokwi.com/) with the diagram included in the repository.
 
 ## ✨ Features
 
-- 🚀 **Real-time Light Tracking:** Continuously monitors LDR readings and adjusts servo position to maximize light exposure.
-- 📈 **Efficiency Optimization:** Dynamically follows the strongest light direction to improve capture efficiency.
-- 📶 **Bluetooth Control:** Enables remote manual control and monitoring using Bluetooth-capable devices.
-- 🆘 **Emergency Mode (Panic):** Moves servos to a predefined safe position when panic mode is activated.
-- 🎯 **Automatic LDR Calibration:** Calibrates sensors at startup for more stable and accurate tracking.
-- 🩺 **Diagnostic Mode:** Prints LDR values and servo angles continuously for troubleshooting and tuning.
+- 🔍 **Startup sweep:** at power-on the horizontal servo sweeps from 10° to 170° and stops where the light reading is highest.
+- ☀️ **Automatic tracking:** the four LDRs are averaged in pairs (top, bottom, left, right). When a side drops below the reference level, the matching servo moves 2° toward the light.
+- 📶 **Manual control over Bluetooth:** the board shows up as `ESP32-ServoBot` (Bluetooth Classic, serial). Each command moves a servo 2°.
+- 🆘 **Safe position:** moves both servos to a fixed, predefined position (94° horizontal, 118° vertical).
+- 📟 **Serial telemetry:** every 100 ms the four LDR readings, both servo angles and the current mode are printed at 115200 baud.
+
+### Operating modes
+
+The push button on GPIO 33 cycles through the modes:
+
+| Press | Mode |
+|---|---|
+| — (power-on) | Automatic tracking |
+| 1st | Manual control over Bluetooth |
+| 2nd | Safe position |
+| 3rd | Restarts the board (back to automatic tracking) |
+
+### Bluetooth commands
+
+Pair with `ESP32-ServoBot` and send single characters from any Bluetooth serial terminal app:
+
+| Command | Action |
+|---|---|
+| `1` | Vertical servo −2° |
+| `2` | Vertical servo +2° |
+| `3` | Horizontal servo +2° |
+| `4` | Horizontal servo −2° |
 
 ## 🛠️ Under the Hood (Main Technologies)
 
-- **[ESP32](https://www.espressif.com/en/products/socs/esp32):** Main microcontroller platform.
-- **[PlatformIO](https://platformio.org/):** Build system and project management for embedded development.
-- **[Wokwi](https://wokwi.com/):** Hardware simulation environment for virtual testing.
-- **Arduino-compatible libraries:** Servo control, Bluetooth, sensor reading, and utility modules.
+- **[ESP32](https://www.espressif.com/en/products/socs/esp32)** (DOIT ESP32 DevKit V1) with the Arduino framework.
+- **[PlatformIO](https://platformio.org/):** build, dependencies and upload.
+- **[ESP32Servo](https://github.com/madhephaestus/ESP32Servo)** and **BluetoothSerial:** servo control and Bluetooth Classic serial.
+- **[Wokwi](https://wokwi.com/):** circuit simulation (`diagram.json` and `wokwi.toml`).
+- **GitHub Actions:** every push and pull request compiles the firmware.
 
-## 📋 Requirements
+## 🔌 Hardware
 
-### Hardware Requirements
+- 1 × DOIT ESP32 DevKit V1
+- 4 × LDRs, each in a voltage divider with a resistor (10 kΩ is a common choice)
+- 2 × hobby servos (for example SG90 or MG90S), preferably on their own 5 V supply with a common ground
+- 1 × push button
 
-- **Minimum MCU:** 256-512kB Flash, 16-24kB SRAM, 16MHz
-- **Recommended MCU:** 512kB-1MB+ Flash, 24-32kB+ SRAM, 32-48MHz+
+| Component | ESP32 pin |
+|---|---|
+| LDR top right | GPIO 14 |
+| LDR top left | GPIO 27 |
+| LDR bottom right | GPIO 26 |
+| LDR bottom left | GPIO 25 |
+| Push button | GPIO 33 |
+| Horizontal servo (signal) | GPIO 19 |
+| Vertical servo (signal) | GPIO 18 |
 
-### Compatible Microcontrollers
-
-- **Definitely Works:** GIGA, Portenta (any), ESP32/8266, Teensy 3.5+, STM32 (>256kB), Pico/RP2040 (any)
-- **May Work (with external data/minimal UI):** Uno R4, Nano 33 (any), MKR (any), Due/Zero, STM32 (256kB)
-- **May Work (with heavy adjustments/limited build):** ATMega2560, Genuino 101, Teensy 3.2/3.1, STM32F0
-- **Definitely Won't Work:** Uno (classic up to R3), Nano (classic and Every), Leonardo/Duemilanove, Micro, Pro, Esplora, Teensy 2/LC, STM8 (32<256kB), ATtiny (any)
-
-### Components
-
-- ESP32
-- 4x Light Dependent Resistors (LDRs)
-- 2x Servo Motors
-- 1x Bluetooth Module (integrated into ESP32)
-- Resistors
-
-### Connection Scheme
-
-![Connection Scheme 1](https://drive.google.com/uc?export=view&id=1QWrT_bZSrWUGSNd7l1CWe_IeeuWR4Lq9)
-
-![Connection Scheme 2](https://drive.google.com/uc?export=view&id=1lQeS_DON3KihkdE4mqvhljHWYpZLRqEF)
+Pins, the reference level (`REFERENCIA_LDR`), the step (`INCREMENTO_ANGULO`) and the delay between steps (`PAUSA_MOVIMENTO`) are defined in [`include/config.h`](include/config.h).
 
 ## 🚀 Getting Started
 
-### Clone the Repository
+### Prerequisites
+
+- [PlatformIO](https://platformio.org/install) (CLI or the VS Code extension)
+
+### Build and upload
 
 ```bash
 git clone https://github.com/YagoBorba/ESP32-Light-Tracker.git
-```
-
-### Navigate to Project Directory
-
-```bash
 cd ESP32-Light-Tracker
+pio run                 # compile; PlatformIO downloads the libraries in platformio.ini
+pio run -t upload       # flash the board
+pio device monitor -b 115200
 ```
 
-### Install Dependencies
+### Simulate in Wokwi
 
-Ensure the required Arduino/PlatformIO libraries are available in your environment.
+1. Build the firmware with `pio run`.
+2. Open the folder in VS Code with the [Wokwi extension](https://docs.wokwi.com/vscode/getting-started).
+3. Run **Wokwi: Start Simulator**. It loads `diagram.json` and the firmware from `.pio/build/esp32doit-devkit-v1/`.
 
-### Setup Wokwi Simulation
-
-Use the existing `wokwi.toml` in the root folder. Example expected config:
-
-```toml
-[wokwi]
-version = 1
-elf = "build/esp32doit-devkit-v1/firmware.elf"
-firmware = "build/esp32doit-devkit-v1/firmware.bin"
-
-[[net.forward]]
-from = "localhost:8180"
-to = "target:80"
-```
-
-## ▶️ Usage
-
-1. **Upload the code:** Use PlatformIO, Arduino IDE, or another compatible environment to flash the ESP32.
-2. **Connect the hardware:** Wire all components according to the connection diagrams.
-3. **Power on:** Start the board and observe servo adjustment based on real-time light readings.
-4. **Bluetooth control:** Connect from a Bluetooth-enabled device to manually control/monitor behavior.
-5. **Simulate with Wokwi:** Validate behavior virtually before deploying to hardware.
+Bluetooth is not simulated in Wokwi; tracking, the button and the serial output are.
 
 ## 📁 Project Structure
 
 ```text
 .
 ├── include/
-│   ├── bluetooth.h   # Bluetooth control interfaces
-│   ├── config.h      # Pin definitions and system config
-│   ├── ldr.h         # LDR reading interfaces
-│   ├── servos.h      # Servo control interfaces
-│   └── utils.h       # Shared utility helpers
+│   ├── bluetooth.h   # Bluetooth command handling
+│   ├── config.h      # Pins and tracking parameters
+│   ├── ldr.h         # LDR helpers
+│   ├── servos.h      # Servo movement and tracking
+│   └── utils.h       # Serial telemetry
 ├── src/
-│   ├── bluetooth.cpp # Bluetooth implementation
-│   ├── ldr.cpp       # LDR implementation
-│   ├── main.cpp      # Main application logic
-│   ├── servos.cpp    # Servo implementation
-│   └── utils.cpp     # Utility implementation
-├── lib/
-├── test/
+│   ├── bluetooth.cpp
+│   ├── ldr.cpp
+│   ├── main.cpp      # Setup, mode selection and main loop
+│   ├── servos.cpp
+│   └── utils.cpp
+├── diagram.json      # Wokwi circuit
 ├── platformio.ini
 └── wokwi.toml
 ```
 
-## 🧪 Advanced Features
-
-- **Customizable Tracking Algorithm:** Tune tracking behavior for different environments.
-- **Data Logging (optional extension):** Record light intensity and servo positions for analysis.
-- **Remote Updates (optional extension):** Extend to firmware updates via Bluetooth or Wi-Fi.
-
 ## 🤝 Want to Contribute?
 
-Contributions are welcome.
-
-1. Fork the repository.
-2. Create a feature branch:
-
-```bash
-git checkout -b feature/YourFeatureName
-```
-
-3. Commit your changes:
-
-```bash
-git commit -m "Add your message here"
-```
-
-4. Push your branch:
-
-```bash
-git push origin feature/YourFeatureName
-```
-
-5. Open a Pull Request with a clear description.
-
-## ✅ Testing
-
-1. Ensure hardware is connected according to the connection scheme.
-2. Execute available test scripts/check routines.
-3. Review serial logs and behavior to validate expected operation.
-
-## 🕒 Version History
-
-- **v1.0:** Initial release with basic light tracking.
-- **v1.1:** Added Bluetooth control and panic mode.
-- **v1.2:** Improved tracking algorithm and performance.
-- **v1.3:** Added automatic LDR calibration and diagnostic mode.
+Contributions are welcome. Create a branch, make sure `pio run` compiles, and open a pull request describing the change and how you tested it (on hardware or in Wokwi).
 
 ## 📝 License
 
@@ -194,7 +150,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for m
 ## 📚 References
 
 - [ESP32 Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
-- [Arduino IDE](https://www.arduino.cc/en/Main/Software)
+- [ESP32Servo library](https://github.com/madhephaestus/ESP32Servo)
 - [Servo Motor Control with ESP32](https://randomnerdtutorials.com/esp32-servo-motor-web-server/)
 - [Bluetooth Communication with ESP32](https://randomnerdtutorials.com/esp32-bluetooth-classic-arduino-ide/)
 
